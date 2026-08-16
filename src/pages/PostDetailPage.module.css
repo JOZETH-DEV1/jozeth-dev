@@ -1,0 +1,50 @@
+/* src/pages/PostDetailPage.module.css */
+
+.wrap { max-width: 640px; margin: 0 auto; padding: 16px 0 60px; }
+
+.hero {
+  aspect-ratio: 16/9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+  margin-bottom: 16px;
+}
+.image { width: 100%; height: 100%; object-fit: cover; }
+.imageFallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 4rem;
+}
+
+.catTag {
+  display: inline-block;
+  font-size: 0.78rem; font-weight: 600;
+  background: var(--surface-2);
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.name { font-size: 1.4rem; margin: 0 0 8px; }
+
+.authorRow {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.authorName { display: flex; align-items: center; gap: 4px; color: var(--t2); font-size: 0.9rem; }
+
+.stats { display: flex; gap: 10px; margin-bottom: 14px; }
+.statBtn, .likedBtn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--t2);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.likedBtn { color: var(--accent-2); border-color: var(--accent-2); }
+
+.description { color: var(--t2); font-size: 0.92rem; line-height: 1.6; white-space: pre-wrap; }
+.meta { color: var(--t3); font-size: 0.82rem; }

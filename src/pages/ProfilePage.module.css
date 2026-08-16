@@ -1,0 +1,23 @@
+/* src/pages/ProfilePage.module.css */
+
+.wrap { padding: 20px 0 50px; }
+
+.header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+
+.avatar, .avatarFallback {
+  width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+}
+.avatar { object-fit: cover; }
+.avatarFallback {
+  background: var(--accent-grad); color: #fff;
+  font-weight: 700; font-size: 1.6rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.name { font-size: 1.15rem; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+
+.statsRow { display: flex; gap: 14px; font-size: 0.82rem; color: var(--t3); }
+.statsRow strong { color: var(--t1); }
