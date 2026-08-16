@@ -1,0 +1,59 @@
+/* src/components/catalog/PostCard.module.css */
+
+.card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+
+.thumbWrap {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: var(--surface-2);
+}
+.thumb { width: 100%; height: 100%; object-fit: cover; }
+.thumbFallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem;
+}
+
+.catBadge {
+  position: absolute; top: 8px; left: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0.7rem; font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+
+.body { padding: 12px; }
+
+.name {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--t1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.author {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.78rem;
+  color: var(--t3);
+  margin-bottom: 8px;
+}
+
+.stats {
+  display: flex; gap: 12px;
+  font-size: 0.76rem;
+  color: var(--t3);
+}
+.stats span { display: flex; align-items: center; gap: 3px; }
