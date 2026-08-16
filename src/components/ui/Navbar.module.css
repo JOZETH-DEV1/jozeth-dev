@@ -1,0 +1,92 @@
+/* src/components/ui/Navbar.module.css */
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+
+.inner {
+  height: var(--nav-h);
+  display: flex; align-items: center; gap: 16px;
+}
+
+.logo {
+  font-family: var(--font2);
+  font-weight: 700;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.logo span { color: var(--accent); }
+
+.search {
+  flex: 1;
+  max-width: 420px;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 14px;
+  height: 38px;
+}
+.search input {
+  flex: 1; border: none; background: transparent; outline: none;
+  color: var(--t1); font-size: 0.88rem;
+}
+.searchIcon { color: var(--t3); flex-shrink: 0; }
+
+.actions {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+}
+
+.iconBtn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--t1);
+  cursor: pointer;
+}
+
+.userMenu { position: relative; }
+
+.avatarBtn {
+  display: flex; align-items: center; gap: 4px;
+  background: none; border: none; cursor: pointer; padding: 2px;
+}
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--border);
+}
+.avatarFallback {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent-grad);
+  color: #fff; font-weight: 700; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.dropdown {
+  position: absolute; right: 0; top: calc(100% + 8px);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-lg);
+  min-width: 180px; overflow: hidden; padding: 6px;
+}
+.dropdown a, .dropdown button {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 9px 10px;
+  border: none; background: none; color: var(--t1);
+  font-size: 0.87rem; cursor: pointer; border-radius: var(--radius-sm);
+  text-align: left;
+}
+.dropdown a:hover, .dropdown button:hover { background: var(--surface-2); }
+
+.mobileOnly { display: none; }
+
+@media (max-width: 720px) {
+  .search { display: none; }
+  .mobileOnly { display: flex; }
+}
