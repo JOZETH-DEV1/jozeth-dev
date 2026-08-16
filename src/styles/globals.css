@@ -1,0 +1,158 @@
+/* src/styles/globals.css */
+
+:root {
+  /* Light mode */
+  --bg:        #f6f6f9;
+  --bg-alt:    #ffffff;
+  --surface:   #ffffff;
+  --surface-2: #f0f0f4;
+  --border:    #e4e4ec;
+  --t1:        #17171f;
+  --t2:        #4a4a58;
+  --t3:        #8a8a96;
+  --accent:    #7c3aed;
+  --accent-2:  #db2777;
+  --accent-grad: linear-gradient(135deg, #7c3aed, #db2777);
+  --success:   #16a34a;
+  --danger:    #dc2626;
+  --warning:   #d97706;
+  --radius-sm: 8px;
+  --radius:    14px;
+  --radius-lg: 20px;
+  --shadow:    0 1px 2px rgba(20,20,30,0.04), 0 4px 16px rgba(20,20,30,0.06);
+  --shadow-lg: 0 8px 30px rgba(20,20,30,0.12);
+  --font1: 'Inter', system-ui, -apple-system, sans-serif;
+  --font2: 'JetBrains Mono', ui-monospace, monospace;
+  --nav-h: 60px;
+  --tab-h: 58px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+[data-theme='dark'] {
+  --bg:        #0b0b10;
+  --bg-alt:    #111116;
+  --surface:   #16161d;
+  --surface-2: #1c1c24;
+  --border:    #26262f;
+  --t1:        #f2f2f6;
+  --t2:        #a6a6b3;
+  --t3:        #6e6e7b;
+  --accent:    #a78bfa;
+  --accent-2:  #f472b6;
+  --accent-grad: linear-gradient(135deg, #8b5cf6, #ec4899);
+  --shadow:    0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.55);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--t1);
+  font-family: var(--font1);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+img, video { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+
+/* Scrollbar sutil */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Botones base ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform .12s ease, opacity .12s ease, background .15s ease;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary { background: var(--accent-grad); color: #fff; }
+.btn-primary:hover { opacity: 0.92; }
+
+.btn-ghost { background: var(--surface-2); color: var(--t1); border-color: var(--border); }
+.btn-ghost:hover { background: var(--border); }
+
+.btn-outline { background: transparent; color: var(--accent); border-color: var(--accent); }
+
+.btn-danger { background: var(--danger); color: #fff; }
+
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+.btn-lg { padding: 13px 20px; font-size: 0.95rem; }
+
+/* ── Inputs ── */
+.inp-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.inp-label { font-size: 0.82rem; font-weight: 600; color: var(--t2); }
+.inp, select.inp, textarea.inp {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--t1);
+  font-size: 0.92rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s ease;
+}
+.inp:focus { border-color: var(--accent); }
+textarea.inp { resize: vertical; min-height: 90px; }
+
+/* ── Card genérica ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ── Spinner ── */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(127,127,140,0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Skeleton loading (sin animaciones pesadas) ── */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes skeleton-loading {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* Reducir movimiento si el usuario lo pide */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
