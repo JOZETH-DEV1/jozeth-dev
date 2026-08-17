@@ -41,8 +41,8 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider())
       navigate('/')
-    } catch {
-      toast.error('No se pudo iniciar sesión con Google')
+    } catch (err) {
+      toast.error(googleErrorMessage(err.code))
     } finally {
       setLoading(false)
     }
@@ -96,4 +96,15 @@ function friendlyError(code) {
     'auth/invalid-email': 'Correo inválido',
   }
   return map[code] || 'Ocurrió un error, intenta de nuevo'
+}
+
+function googleErrorMessage(code) {
+  const map = {
+    'auth/unauthorized-domain': 'Este dominio no está autorizado en Firebase (Authentication → Settings → Authorized domains)',
+    'auth/operation-not-allowed': 'El proveedor Google no está activado en Firebase (Authentication → Sign-in method)',
+    'auth/popup-blocked': 'El navegador bloqueó la ventana emergente — permite popups para este sitio',
+    'auth/popup-closed-by-user': 'Cerraste la ventana antes de terminar el inicio de sesión',
+    'auth/cancelled-popup-request': 'Se canceló la ventana anterior, intenta de nuevo',
+  }
+  return map[code] || `No se pudo iniciar sesión con Google${code ? ` (${code})` : ''}`
 }
