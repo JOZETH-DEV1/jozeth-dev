@@ -35,21 +35,26 @@ function getContentType(filename, fallback) {
 
 // Verifica el ID token de Firebase Auth contra el endpoint público de Google.
 // Evita que alguien anónimo use este endpoint como proxy gratuito de subida.
-async function verifyFirebaseToken(idToken, projectId) {
-  if (!idToken) return null
+async function verifyFirebaseToken(idToken, apiKey) {
+  if (!idToken) return { uid: null, reason: 'Falta el token de sesión' }
+  if (!apiKey) return { uid: null, reason: 'Falta configurar FIREBASE_API_KEY en el servidor' }
   try {
     const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${projectId}`,
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken }) }
     )
     // La verificación completa de firma JWT no es viable sin librerías crypto
     // pesadas en el edge; en su lugar delegamos en el endpoint de Google,
     // que solo responde 200 si el token es válido y no ha expirado.
-    if (!res.ok) return null
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      return { uid: null, reason: errData?.error?.message || `Token inválido (${res.status})` }
+    }
     const data = await res.json()
-    return data?.users?.[0]?.localId || null
-  } catch {
-    return null
+    const uid = data?.users?.[0]?.localId || null
+    return { uid, reason: uid ? null : 'Token no reconocido' }
+  } catch (err) {
+    return { uid: null, reason: 'Error al verificar el token: ' + err.message }
   }
 }
 
@@ -64,9 +69,12 @@ export async function onRequestPost(context) {
 
   const authHeader = request.headers.get('Authorization') || ''
   const idToken = authHeader.replace(/^Bearer\s+/i, '')
-  const uid = await verifyFirebaseToken(idToken, env.FIREBASE_PROJECT_ID)
+  // Nota: el endpoint accounts:lookup de Google se autentica con la Web API
+  // Key del proyecto de Firebase (la misma que VITE_FIREBASE_API_KEY), NO
+  // con el Project ID — por eso aquí se usa FIREBASE_API_KEY.
+  const { uid, reason } = await verifyFirebaseToken(idToken, env.FIREBASE_API_KEY)
   if (!uid) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autenticado' }), {
+    return new Response(JSON.stringify({ ok: false, error: `No autenticado: ${reason}` }), {
       status: 401, headers: { 'Content-Type': 'application/json', ...cors },
     })
   }
