@@ -1,23 +1,27 @@
 // functions/api/upload.js
 //
-// Cloudflare Pages Function — recibe el archivo del navegador (streaming, sin
-// cargarlo entero en memoria) y lo reenvía a Archive.org usando las
-// credenciales guardadas como variables secretas del proyecto en Cloudflare
-// (Settings → Environment variables → Encrypt). Nunca llegan al navegador.
+// Cloudflare Pages Function — recibe el archivo del navegador y lo sube como
+// "release asset" a un repositorio de GitHub dedicado a hosting de archivos.
+// El token de GitHub se guarda como variable secreta del proyecto en
+// Cloudflare (Settings → Environment variables → Encrypt) y nunca llega al
+// navegador.
 //
 // Requiere, en el proyecto de Cloudflare Pages, las variables:
-//   ARCHIVE_ACCESS_KEY   (secret)
-//   ARCHIVE_SECRET_KEY   (secret)
-//   FIREBASE_PROJECT_ID  (texto plano, para validar el token del usuario)
+//   GITHUB_TOKEN          (secret) — fine-grained PAT con permiso Contents: Read & write
+//   GITHUB_OWNER           (texto) — tu usuario u organización de GitHub
+//   GITHUB_REPO            (texto) — nombre del repo dedicado a archivos, ej. jozeth-dev-files
+//   FIREBASE_API_KEY       (texto) — la misma que VITE_FIREBASE_API_KEY, para validar el token del usuario
+//
+// Límite práctico: 2GB por archivo (límite de GitHub Release Assets).
+// El archivo se lee completo en memoria antes de subirlo (la API de GitHub
+// requiere Content-Length de antemano, no soporta cuerpo en streaming como
+// S3), así que respeta el límite de memoria del plan de Cloudflare Pages
+// Functions — para catálogos con archivos muy pesados de forma constante,
+// considera Backblaze B2 u otro backend con soporte de streaming real.
 
-function generateIdentifier(filename) {
-  const normalized = filename.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  const clean = normalized.toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
-  const safe = clean.length >= 3 ? clean : 'app'
-  return `jozethdev-${safe}-${Date.now()}`
+function sanitizeFilename(filename) {
+  // GitHub no permite espacios ni ciertos caracteres en nombres de asset
+  return filename.replace(/[^a-zA-Z0-9._-]/g, '_')
 }
 
 function getContentType(filename, fallback) {
@@ -43,9 +47,6 @@ async function verifyFirebaseToken(idToken, apiKey) {
       `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken }) }
     )
-    // La verificación completa de firma JWT no es viable sin librerías crypto
-    // pesadas en el edge; en su lugar delegamos en el endpoint de Google,
-    // que solo responde 200 si el token es válido y no ha expirado.
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}))
       return { uid: null, reason: errData?.error?.message || `Token inválido (${res.status})` }
@@ -56,6 +57,42 @@ async function verifyFirebaseToken(idToken, apiKey) {
   } catch (err) {
     return { uid: null, reason: 'Error al verificar el token: ' + err.message }
   }
+}
+
+async function githubApi(path, env, options = {}) {
+  const res = await fetch(`https://api.github.com${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'jozethdev-worker',
+      ...options.headers,
+    },
+  })
+  return res
+}
+
+// Crea un release único para este archivo. Un release por archivo evita
+// colisiones de nombres (GitHub no permite dos assets con el mismo nombre
+// en el mismo release) y mantiene cada descarga como una URL estable propia.
+async function createRelease(env, tagName, title) {
+  const res = await githubApi(`/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/releases`, env, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tag_name: tagName,
+      name: title,
+      body: `Archivo subido automáticamente por JozethDev.`,
+      draft: false,
+      prerelease: false,
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.message || `No se pudo crear el release (${res.status})`)
+  }
+  return res.json()
 }
 
 export async function onRequestPost(context) {
@@ -69,9 +106,6 @@ export async function onRequestPost(context) {
 
   const authHeader = request.headers.get('Authorization') || ''
   const idToken = authHeader.replace(/^Bearer\s+/i, '')
-  // Nota: el endpoint accounts:lookup de Google se autentica con la Web API
-  // Key del proyecto de Firebase (la misma que VITE_FIREBASE_API_KEY), NO
-  // con el Project ID — por eso aquí se usa FIREBASE_API_KEY.
   const { uid, reason } = await verifyFirebaseToken(idToken, env.FIREBASE_API_KEY)
   if (!uid) {
     return new Response(JSON.stringify({ ok: false, error: `No autenticado: ${reason}` }), {
@@ -79,63 +113,65 @@ export async function onRequestPost(context) {
     })
   }
 
-  if (!env.ARCHIVE_ACCESS_KEY || !env.ARCHIVE_SECRET_KEY) {
-    return new Response(JSON.stringify({ ok: false, error: 'Archive.org no está configurado en el servidor' }), {
+  if (!env.GITHUB_TOKEN || !env.GITHUB_OWNER || !env.GITHUB_REPO) {
+    return new Response(JSON.stringify({ ok: false, error: 'GitHub no está configurado en el servidor' }), {
       status: 500, headers: { 'Content-Type': 'application/json', ...cors },
     })
   }
 
   const rawName = request.headers.get('X-File-Name') || 'archivo.bin'
-  const filename = decodeURIComponent(rawName)
+  const filename = sanitizeFilename(decodeURIComponent(rawName))
   const contentLength = request.headers.get('Content-Length')
-  const MAX_BYTES = 4 * 1024 * 1024 * 1024 // 4GB
+  const MAX_BYTES = 2 * 1024 * 1024 * 1024 // 2GB — límite de GitHub Release Assets
   if (contentLength && Number(contentLength) > MAX_BYTES) {
-    return new Response(JSON.stringify({ ok: false, error: 'Archivo demasiado grande (máx. 4GB)' }), {
+    return new Response(JSON.stringify({ ok: false, error: 'Archivo demasiado grande (máx. 2GB en GitHub)' }), {
       status: 413, headers: { 'Content-Type': 'application/json', ...cors },
     })
   }
 
-  const identifier = generateIdentifier(filename)
-  const encodedName = encodeURIComponent(filename)
-  const uploadUrl = `https://s3.us.archive.org/${identifier}/${encodedName}`
-
   try {
-    const archiveRes = await fetch(uploadUrl, {
-      method: 'PUT',
-      // Reenvía el body como stream — no se carga el archivo completo en memoria del Worker.
-      body: request.body,
-      duplex: 'half',
+    // 1) Leer el archivo completo — la API de assets de GitHub necesita
+    //    Content-Length conocido, no admite cuerpo en streaming.
+    const fileBuffer = await request.arrayBuffer()
+
+    // 2) Crear un release único (tag basado en timestamp + nombre) que
+    //    servirá como contenedor de este archivo.
+    const tagName = `file-${Date.now()}`
+    const release = await createRelease(env, tagName, filename.replace(/\.[^.]+$/, ''))
+
+    // 3) Subir el archivo como asset del release. El endpoint de upload usa
+    //    un host distinto (uploads.github.com) y requiere el asset name en
+    //    la query string.
+    const uploadUrl = `https://uploads.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/releases/${release.id}/assets?name=${encodeURIComponent(filename)}`
+    const assetRes = await fetch(uploadUrl, {
+      method: 'POST',
       headers: {
-        'Authorization': `LOW ${env.ARCHIVE_ACCESS_KEY}:${env.ARCHIVE_SECRET_KEY}`,
-        'x-amz-auto-make-bucket': '1',
-        'x-archive-auto-make-bucket': '1',
-        'x-archive-ignore-preexisting-bucket': '1',
-        'x-archive-meta-mediatype': 'software',
-        'x-archive-meta-title': filename.replace(/\.[^.]+$/, ''),
-        'x-archive-meta-subject': 'APK;Android;Mod;JozethDev',
-        'x-archive-meta-creator': 'JozethDev',
+        'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'jozethdev-worker',
         'Content-Type': getContentType(filename, request.headers.get('Content-Type')),
+        'Content-Length': String(fileBuffer.byteLength),
       },
+      body: fileBuffer,
     })
 
-    if (!archiveRes.ok) {
-      const bodyText = await archiveRes.text().catch(() => '')
-      let msg = `Archive.org error ${archiveRes.status}`
-      if (archiveRes.status === 401 || archiveRes.status === 403) msg = 'Credenciales de Archive.org inválidas o sin permiso'
-      if (archiveRes.status === 503) msg = 'Archive.org ocupado, intenta de nuevo en unos minutos'
-      if (bodyText) msg += ` — ${bodyText.slice(0, 300)}`
-      return new Response(JSON.stringify({ ok: false, error: msg }), {
-        status: 502, headers: { 'Content-Type': 'application/json', ...cors },
-      })
+    if (!assetRes.ok) {
+      const errText = await assetRes.text().catch(() => '')
+      // El release ya se creó — si el asset falla, lo borramos para no dejar releases vacíos huérfanos.
+      await githubApi(`/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/releases/${release.id}`, env, { method: 'DELETE' }).catch(() => {})
+      throw new Error(`Error al subir el archivo a GitHub (${assetRes.status}): ${errText.slice(0, 300)}`)
     }
+
+    const asset = await assetRes.json()
 
     return new Response(JSON.stringify({
       ok: true,
-      url: `https://archive.org/download/${identifier}/${encodedName}`,
-      identifier,
+      url: asset.browser_download_url,
+      identifier: tagName,
     }), { headers: { 'Content-Type': 'application/json', ...cors } })
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: `Error al subir a Archive.org: ${err.name}: ${err.message}` }), {
+    return new Response(JSON.stringify({ ok: false, error: `Error al subir el archivo: ${err.message}` }), {
       status: 500, headers: { 'Content-Type': 'application/json', ...cors },
     })
   }
