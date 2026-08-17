@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import Layout from './components/ui/Layout'
 import ProtectedRoute from './components/ui/ProtectedRoute'
+import ErrorBoundary from './components/ui/ErrorBoundary'
 
 import HomePage from './pages/HomePage'
 import CategoryPage from './pages/CategoryPage'
@@ -18,6 +19,7 @@ import NotFoundPage from './pages/NotFoundPage'
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
@@ -47,5 +49,6 @@ export default function App() {
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
+    </ErrorBoundary>
   )
 }
