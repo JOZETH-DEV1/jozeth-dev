@@ -79,7 +79,7 @@ export default function UploadPage() {
       toast.success('¡Publicado con éxito!')
       navigate(`/post/${postId}`)
     } catch (err) {
-      toast.error(err.message)
+      toast.error(err.message, { duration: 7000 })
     } finally {
       setLoading(false); setProgress(0); setProgressLabel('')
     }
