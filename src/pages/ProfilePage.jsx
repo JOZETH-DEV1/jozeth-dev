@@ -19,25 +19,32 @@ export default function ProfilePage() {
   const [posts, setPosts]     = useState([])
   const [following, setFollowingState] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState(null)
 
   useEffect(() => {
     let active = true
     async function load() {
-      const snap = await getDoc(doc(db, 'users', uid))
-      if (!active) return
-      if (snap.exists()) setProfile({ uid, ...snap.data() })
+      try {
+        const snap = await getDoc(doc(db, 'users', uid))
+        if (!active) return
+        if (snap.exists()) setProfile({ uid, ...snap.data() })
 
-      const postsSnap = await getDocs(query(
-        collection(db, 'posts'), where('authorId', '==', uid),
-        where('status', '==', 'active'), orderBy('createdAt', 'desc')
-      ))
-      if (active) setPosts(postsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+        const postsSnap = await getDocs(query(
+          collection(db, 'posts'), where('authorId', '==', uid),
+          where('status', '==', 'active'), orderBy('createdAt', 'desc')
+        ))
+        if (active) setPosts(postsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
 
-      if (user && user.uid !== uid) {
-        const f = await isFollowing(user.uid, uid)
-        if (active) setFollowingState(f)
+        if (user && user.uid !== uid) {
+          const f = await isFollowing(user.uid, uid)
+          if (active) setFollowingState(f)
+        }
+      } catch (err) {
+        console.error('Error cargando perfil:', err)
+        if (active) setError(err.message)
+      } finally {
+        if (active) setLoading(false)
       }
-      if (active) setLoading(false)
     }
     load()
     return () => { active = false }
@@ -53,6 +60,12 @@ export default function ProfilePage() {
   }
 
   if (loading) return <div className="skeleton" style={{ height: 200, margin: '20px 0' }} />
+  if (error) return (
+    <div className={gridStyles.empty}>
+      ⚠️ Error al cargar el perfil.<br />
+      <span style={{ fontSize: '0.78rem', color: 'var(--t3)' }}>{error}</span>
+    </div>
+  )
   if (!profile) return <div className={gridStyles.empty}>Usuario no encontrado.</div>
 
   return (
