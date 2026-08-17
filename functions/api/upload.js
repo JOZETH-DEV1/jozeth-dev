@@ -107,6 +107,7 @@ export async function onRequestPost(context) {
       duplex: 'half',
       headers: {
         'Authorization': `LOW ${env.ARCHIVE_ACCESS_KEY}:${env.ARCHIVE_SECRET_KEY}`,
+        'x-amz-auto-make-bucket': '1',
         'x-archive-auto-make-bucket': '1',
         'x-archive-ignore-preexisting-bucket': '1',
         'x-archive-meta-mediatype': 'software',
@@ -118,9 +119,11 @@ export async function onRequestPost(context) {
     })
 
     if (!archiveRes.ok) {
+      const bodyText = await archiveRes.text().catch(() => '')
       let msg = `Archive.org error ${archiveRes.status}`
-      if (archiveRes.status === 401 || archiveRes.status === 403) msg = 'Credenciales de Archive.org inválidas'
-      if (archiveRes.status === 503) msg = 'Archive.org no disponible, intenta de nuevo en unos minutos'
+      if (archiveRes.status === 401 || archiveRes.status === 403) msg = 'Credenciales de Archive.org inválidas o sin permiso'
+      if (archiveRes.status === 503) msg = 'Archive.org ocupado, intenta de nuevo en unos minutos'
+      if (bodyText) msg += ` — ${bodyText.slice(0, 300)}`
       return new Response(JSON.stringify({ ok: false, error: msg }), {
         status: 502, headers: { 'Content-Type': 'application/json', ...cors },
       })
@@ -132,7 +135,7 @@ export async function onRequestPost(context) {
       identifier,
     }), { headers: { 'Content-Type': 'application/json', ...cors } })
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: 'Error al subir a Archive.org: ' + err.message }), {
+    return new Response(JSON.stringify({ ok: false, error: `Error al subir a Archive.org: ${err.name}: ${err.message}` }), {
       status: 500, headers: { 'Content-Type': 'application/json', ...cors },
     })
   }
