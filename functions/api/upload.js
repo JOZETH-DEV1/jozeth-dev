@@ -90,7 +90,9 @@ async function createRelease(env, tagName, title) {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err?.message || `No se pudo crear el release (${res.status})`)
+    const detail = err?.errors ? JSON.stringify(err.errors) : ''
+    const hint = res.status >= 500 ? ' — parece un problema temporal de GitHub, revisa https://www.githubstatus.com' : ''
+    throw new Error((err?.message || `No se pudo crear el release (${res.status})`) + (detail ? `: ${detail}` : '') + hint)
   }
   return res.json()
 }
@@ -160,7 +162,8 @@ export async function onRequestPost(context) {
       const errText = await assetRes.text().catch(() => '')
       // El release ya se creó — si el asset falla, lo borramos para no dejar releases vacíos huérfanos.
       await githubApi(`/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/releases/${release.id}`, env, { method: 'DELETE' }).catch(() => {})
-      throw new Error(`Error al subir el archivo a GitHub (${assetRes.status}): ${errText.slice(0, 300)}`)
+      const hint = assetRes.status >= 500 ? ' — parece un problema temporal de GitHub, revisa https://www.githubstatus.com' : ''
+      throw new Error(`Error al subir el archivo a GitHub (${assetRes.status}): ${errText.slice(0, 300)}${hint}`)
     }
 
     const asset = await assetRes.json()
