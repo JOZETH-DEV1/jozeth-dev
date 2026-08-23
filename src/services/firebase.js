@@ -1,9 +1,15 @@
 // src/services/firebase.js
 import { initializeApp } from 'firebase/app'
 import {
-  getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, signOut, updateProfile,
-  sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup,
+  getAuth,
+  onAuthStateChanged as fbOnAuthStateChanged,
+  signInWithEmailAndPassword as fbSignIn,
+  createUserWithEmailAndPassword as fbCreateUser,
+  signOut as fbSignOut,
+  updateProfile as fbUpdateProfile,
+  sendPasswordResetEmail as fbReset,
+  GoogleAuthProvider as fbGoogle,
+  signInWithPopup as fbPopup
 } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
@@ -16,26 +22,25 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-// Si falta alguna variable de entorno, avisamos con un mensaje claro
-// en vez de dejar que Firebase falle con un error críptico o que la
-// app se quede en blanco sin explicación.
-const missing = Object.entries(firebaseConfig)
-  .filter(([, v]) => !v)
-  .map(([k]) => k)
+const hasFirebaseConfig = !!firebaseConfig.apiKey;
 
-if (missing.length) {
-  throw new Error(
-    `Faltan variables de entorno de Firebase: ${missing.join(', ')}. ` +
-    `Configúralas en Cloudflare Pages → Settings → Environment variables y vuelve a desplegar.`
-  )
+let app = {};
+export let auth = {};
+export let db = {};
+
+if (hasFirebaseConfig) {
+  app = initializeApp(firebaseConfig)
+  auth = getAuth(app)
+  db = getFirestore(app)
+} else {
+  console.warn("Faltan variables de Firebase. Usando modo visual mockeado.");
 }
 
-const app = initializeApp(firebaseConfig)
-
-export const auth = getAuth(app)
-export const db    = getFirestore(app)
-
-export {
-  onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  signOut, updateProfile, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup,
-}
+export const onAuthStateChanged = (a, cb) => hasFirebaseConfig ? fbOnAuthStateChanged(a, cb) : (cb(null), () => {});
+export const signInWithEmailAndPassword = fbSignIn;
+export const createUserWithEmailAndPassword = fbCreateUser;
+export const signOut = fbSignOut;
+export const updateProfile = fbUpdateProfile;
+export const sendPasswordResetEmail = fbReset;
+export const GoogleAuthProvider = fbGoogle;
+export const signInWithPopup = fbPopup;

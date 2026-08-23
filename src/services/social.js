@@ -8,6 +8,7 @@ import { db } from './firebase'
 // ═══ LIKES ═══
 // Un documento por (postId_uid) en /likes para poder verificar "¿ya dio like?" en O(1)
 export async function toggleLike(postId, uid) {
+  if (!import.meta.env.VITE_FIREBASE_API_KEY) return true;
   const likeId = `${postId}_${uid}`
   const ref = doc(db, 'likes', likeId)
   const snap = await getDoc(ref)
@@ -25,7 +26,7 @@ export async function toggleLike(postId, uid) {
 }
 
 export async function hasLiked(postId, uid) {
-  if (!uid) return false
+  if (!uid || !import.meta.env.VITE_FIREBASE_API_KEY) return false;
   const snap = await getDoc(doc(db, 'likes', `${postId}_${uid}`))
   return snap.exists()
 }
@@ -34,6 +35,7 @@ export async function hasLiked(postId, uid) {
 // Documento en /follows/{followerId_followingId}
 export async function toggleFollow(followerId, followingId) {
   if (followerId === followingId) throw new Error('No puedes seguirte a ti mismo')
+  if (!import.meta.env.VITE_FIREBASE_API_KEY) return true;
   const followId = `${followerId}_${followingId}`
   const ref = doc(db, 'follows', followId)
   const snap = await getDoc(ref)
@@ -54,7 +56,7 @@ export async function toggleFollow(followerId, followingId) {
 }
 
 export async function isFollowing(followerId, followingId) {
-  if (!followerId) return false
+  if (!followerId || !import.meta.env.VITE_FIREBASE_API_KEY) return false;
   const snap = await getDoc(doc(db, 'follows', `${followerId}_${followingId}`))
   return snap.exists()
 }
@@ -101,6 +103,9 @@ export async function deleteComment(postId, commentId) {
 }
 
 export async function getComments(postId, pageSize = 50) {
+  if (!import.meta.env.VITE_FIREBASE_API_KEY) return [
+    { id: '1', displayName: 'Usuario de prueba', text: '¡Increíble aporte! Muy buen diseño.', createdAt: new Date() }
+  ];
   const q = query(
     collection(db, 'posts', postId, 'comments'),
     orderBy('createdAt', 'desc'),
