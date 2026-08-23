@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { getPosts } from '../../services/posts'
 import PostCard from './PostCard'
+import QuickPreview from '../ui/QuickPreview'
 import styles from './PostGrid.module.css'
 
 export default function PostGrid({ category = null }) {
@@ -44,11 +45,13 @@ export default function PostGrid({ category = null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, loading, loadingMore, cursor])
 
+  const [previewPost, setPreviewPost] = useState(null);
+
   if (loading) {
     return (
       <div className={styles.grid}>
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="skeleton" style={{ aspectRatio: '1/1.35' }} />
+          <div key={i} className="skeleton" style={{ aspectRatio: '16/9' }} />
         ))}
       </div>
     )
@@ -61,12 +64,23 @@ export default function PostGrid({ category = null }) {
   return (
     <>
       <div className={styles.grid}>
-        {posts.map(p => <PostCard key={p.id} post={p} />)}
+        {posts.map(p => (
+          <PostCard 
+            key={p.id} 
+            post={p} 
+            onPreview={(e) => { e.preventDefault(); setPreviewPost(p); }} 
+          />
+        ))}
       </div>
       {hasMore && (
         <div ref={sentinelRef} className={styles.sentinel}>
           {loadingMore && <span className="spinner" />}
         </div>
+      )}
+      
+      {/* Import QuickPreview dynamically or add it at the top */}
+      {previewPost && (
+        <QuickPreview post={previewPost} onClose={() => setPreviewPost(null)} />
       )}
     </>
   )

@@ -2,23 +2,23 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 16px 0 40px;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 20px;
+  padding: 16px 0 60px;
 }
 
-@media (min-width: 560px)  { .grid { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 860px)  { .grid { grid-template-columns: repeat(4, 1fr); } }
-@media (min-width: 1140px) { .grid { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 560px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 860px)  { .grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1140px) { .grid { grid-template-columns: repeat(4, 1fr); gap: 24px; } }
 
 .empty {
-  padding: 60px 20px;
+  padding: 80px 20px;
   text-align: center;
   color: var(--t3);
-  font-size: 0.95rem;
+  font-size: 1.1rem;
 }
 
 .sentinel {
   display: flex; justify-content: center;
-  padding: 20px 0 40px;
+  padding: 20px 0 60px;
 }
