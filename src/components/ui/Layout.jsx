@@ -2,6 +2,7 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar'
 import CategoryTabs from '../catalog/CategoryTabs'
+import CommandPalette from './CommandPalette'
 import styles from './Layout.module.css'
 
 export default function Layout() {
@@ -12,6 +13,7 @@ export default function Layout() {
       <main className={`container ${styles.main}`}>
         <Outlet />
       </main>
+      <CommandPalette />
     </div>
   )
 }
