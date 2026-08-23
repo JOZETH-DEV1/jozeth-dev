@@ -21,16 +21,27 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     let active = true
-    getPost(id).then(p => {
-      if (!active) return
-      if (!p) { setNotFound(true); return }
-      setPost(p)
-      incrementView(id)
-      if (user) {
-        hasLiked(id, user.uid).then(setLiked)
-        if (user.uid !== p.authorId) isFollowing(user.uid, p.authorId).then(setFollowingState)
-      }
-    }).finally(() => active && setLoading(false))
+    setLoading(true)
+    getPost(id)
+      .then(p => {
+        if (!active) return
+        if (!p) { setNotFound(true); return }
+        setPost(p)
+        try { incrementView(id) } catch (e) {}
+        if (user) {
+          hasLiked(id, user.uid).then(setLiked).catch(() => {})
+          if (user.uid !== p.authorId) {
+            isFollowing(user.uid, p.authorId).then(setFollowingState).catch(() => {})
+          }
+        }
+      })
+      .catch(err => {
+        console.error("Error cargando post:", err);
+        if (active) setNotFound(true); // Treat errors as not found to avoid infinite skeleton
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      })
     return () => { active = false }
   }, [id, user])
 
@@ -54,6 +65,19 @@ export default function PostDetailPage() {
     window.open(post.downloadUrl, '_blank', 'noopener,noreferrer')
   }
 
+  const [scrollProgress, setScrollProgress] = useState(0)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollTop
+      const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight
+      const scroll = windowHeight > 0 ? `${(totalScroll / windowHeight) * 100}` : 0
+      setScrollProgress(Number(scroll))
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   if (notFound) return <Navigate to="/404" replace />
   if (loading || !post) {
     return <div className="skeleton" style={{ height: 400, margin: '20px 0' }} />
@@ -63,6 +87,15 @@ export default function PostDetailPage() {
 
   return (
     <div className={styles.wrap}>
+      {/* Feature 5: Progress Bar */}
+      <div 
+        style={{
+          position: 'fixed', top: 0, left: 0, height: '3px',
+          background: 'var(--accent-grad)', zIndex: 1000,
+          width: `${scrollProgress}%`, transition: 'width 0.1s'
+        }}
+      />
+
       <div className={styles.hero}>
         {post.imageUrl
           ? <img src={post.imageUrl} alt={post.name} className={styles.image} />
