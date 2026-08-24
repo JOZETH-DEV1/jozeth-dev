@@ -1,7 +1,7 @@
 /* src/pages/LoginPage.module.css */
 
 .wrap {
-  min-height: calc(100vh - var(--nav-h) - 50px);
+  min-height: calc(100dvh - var(--nav-h) - var(--safe-b));
   display: flex; align-items: center; justify-content: center;
   padding: 24px 16px;
 }

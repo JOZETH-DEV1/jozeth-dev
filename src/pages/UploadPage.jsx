@@ -136,7 +136,7 @@ export default function UploadPage() {
           {useExternalLink ? (
             <input className="inp" placeholder="https://..." value={externalLink} onChange={e => setExternalLink(e.target.value)} />
           ) : (
-            <input type="file" accept=".apk,.zip,.rar,.7z,.apks,.xapk,.tar,.gz" onChange={handleApkChange} />
+            <input type="file" accept=".apk,.zip,.rar,.7z,.apks,.xapk,.tar,.gz,.mcpack,.mcworld,.mcaddon" onChange={handleApkChange} />
           )}
           {apkFile && !useExternalLink && (
             <p style={{ fontSize: '0.8rem', color: 'var(--t3)', marginTop: 6 }}>
