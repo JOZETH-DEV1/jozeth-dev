@@ -61,6 +61,7 @@
 html, body, #root { min-height: 100%; }
 
 body {
+  overflow-x: hidden;
   margin: 0;
   background: var(--bg);
   color: var(--t1);
@@ -215,4 +216,49 @@ textarea.inp { resize: vertical; min-height: 100px; }
 
 .animate-fade-in-up {
   animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Premium Background Orbs ── */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.15;
+  animation: orb-float 20s infinite alternate ease-in-out;
+}
+
+body::before {
+  width: 40vw; height: 40vw;
+  background: var(--accent);
+  top: -10vw; left: -10vw;
+}
+
+body::after {
+  width: 30vw; height: 30vw;
+  background: var(--accent-2);
+  bottom: -5vw; right: -5vw;
+  animation-duration: 25s;
+  animation-delay: -5s;
+}
+
+[data-theme='light'] body::before, [data-theme='light'] body::after {
+  opacity: 0.08;
+}
+
+@keyframes orb-float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(5vw, 5vh) scale(1.1); }
+  100% { transform: translate(-2vw, 10vh) scale(0.9); }
+}
+
+/* Make glass-headers more premium */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
